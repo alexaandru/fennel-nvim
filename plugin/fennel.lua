@@ -1,14 +1,17 @@
-if vim.g.fennel_shim_loaded then return end
+if vim.g.fennel_loader then return end
 
-local dt = require"fennel-shim.util"
 local shim = vim.api.nvim_get_runtime_file("fnl/fennel-shim/init.fnl", false)[1]
+local err = function(msg) vim.notify(msg, vim.log.levels.ERROR) end
 
 if shim then
-  local fennel = dt("loaded fennel lib", require, "fennel")
-  dt("loaded fennel-shim", fennel.dofile, shim)
-  require("fennel-shim.plugin").load()
+  local ok, fennel = pcall(require, "fennel")
+  if ok then
+    fennel.dofile(shim)
+    require("fennel-shim.plugin")("plugin")
+    if vim.g.fennel_shim_ftplugin then require("fennel-shim.ftplugin") end
+  else
+    err "failed to load fennel, fennel shim will not work"
+  end
 else
-  vim.notify("failed to locate fennel shim, fennel files will not work", vim.log.levels.ERROR)
+  err "failed to locate fennel shim, fennel files will not work"
 end
-
-vim.g.fennel_shim_loaded = true

@@ -1,1 +1,1 @@
-require("fennel-shim.after")()
+require("fennel-shim.plugin")("after/plugin")
