@@ -62,8 +62,9 @@
 
 (fn loader-glob [basename]
   (let [name (basename:gsub "%." "/")
-        pat "fnl/**/%s/init.fnl fnl/**/%s.fnl"]
-    (pat:format name name)))
+        pat "fnl/**/%s/init.fnl fnl/**/%s.fnl %s.fnl"
+        pat (pat:format name name name)]
+    pat))
 
 (fn load-lib [basename]
   (let [pat (loader-glob basename)
