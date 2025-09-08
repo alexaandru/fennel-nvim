@@ -1,1 +1,3 @@
-require("fennel-shim.plugin")("after/plugin")
+local f = require("fennel-shim.plugin")
+f("plugin")
+f("after/plugin")
