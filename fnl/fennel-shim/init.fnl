@@ -1,21 +1,24 @@
 (local fennel (require :fennel))
 (local cache-dir (vim.fn.stdpath :cache))
 (local cache {:cache {} :last_dump 0 :ms 1000 :file (.. cache-dir :/fennel-shim.bin)})
-(set vim.g.fennel_log
-     (let [f (assert (io.open (.. cache-dir :/fennel-shim.log) :a))]
-       (fn flush []
-         (vim.defer_fn flush 1000)
-         (f:flush))
-       (flush)
-       (fn [...]
-         (f:write (string.format "[%s] %s\n" (os.date "%F %T") (table.concat [...] " "))))))
+(let [log-dir (vim.fn.stdpath :log)]
+  (set vim.g.fennel_log
+       (let [f (assert (io.open (.. log-dir :/fennel-shim.log) :a))]
+         (fn flush []
+           (vim.defer_fn flush 1000)
+           (f:flush))
+
+         (flush)
+         (fn [...]
+           (f:write (string.format "[%s] %s\n" (os.date "%F %T")
+                                   (table.concat [...] " ")))))))
 
 (vim.g.fennel_log :Loaded (fennel.runtimeVersion))
 
 (fn cache.dump []
   (when (and cache.last_update (> cache.last_update cache.last_dump))
     (let [f (assert (io.open cache.file :wb))]
-      (set cache.last_dump (vim.loop.hrtime))
+      (set cache.last_dump (vim.uv.hrtime))
       (assert (f:write (vim.mpack.encode cache.cache)))
       (assert (f:flush))
       (assert (f:close))
@@ -32,8 +35,10 @@
    (vim.defer_fn cache.dump cache.ms)))
 
 (fn cache.compile [file]
-  (let [f (assert (io.open file :r))]
-    (fennel.compileString (f:read :*all) {:filename file})))
+  (let [f (assert (io.open file :r))
+        lua-src (fennel.compileString (f:read :*all) {:filename file})
+        lua-fn (assert (load lua-src))]
+    (string.dump lua-fn)))
 
 (fn cache.fetch [file]
   (?. cache.cache file))
@@ -41,19 +46,20 @@
 (fn cache.set [file sec]
   (let [data (cache.compile file)]
     (tset cache.cache file {: data : sec})
-    (set cache.last_update (vim.loop.hrtime))
+    (set cache.last_update (vim.uv.hrtime))
     data))
 
 (fn cache.fetch-or-set [file]
-  (let [sec (?. (vim.loop.fs_stat file) :mtime :sec)
+  (let [sec (?. (vim.uv.fs_stat file) :mtime :sec)
         data (cache.fetch file)]
     (if (or (not data) (< data.sec sec))
         (values (cache.set file sec) :miss)
         (values data.data :hit))))
 
 (fn vim.g.fennel_loader [file]
-  (let [(code hit) (cache.fetch-or-set file)]
-    (values ((load code)) hit)))
+  (let [(bytecode hit) (cache.fetch-or-set file)
+        loader (assert (load bytecode))]
+    (values (loader) hit)))
 
 (fn SourceCmd [lib]
   (let [(resp hit) (vim.g.fennel_loader lib.file)

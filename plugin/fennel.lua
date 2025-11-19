@@ -7,6 +7,7 @@ if shim then
   local ok, fennel = pcall(require, "fennel")
   if ok then
     fennel.dofile(shim)
+    require("fennel-shim.lsp")
     require("fennel-shim.plugin")("plugin")
     if vim.g.fennel_shim_ftplugin then require("fennel-shim.ftplugin") end
   else

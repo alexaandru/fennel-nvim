@@ -17,7 +17,7 @@ Inspired by [Moonwalk](https://github.com/gpanders/nvim-moonwalk).
 
 It adds a fennel loader to `package.loaders` and it hooks up to `SourceCmd` for
 `*.fnl` so it can resolve `:source` and `:runtime` commands.
-It also adds a caching layer on top of that. That's it.
+It also adds a bytecode caching layer on top of that. That's it.
 
 ## Usage
 
@@ -40,6 +40,12 @@ What works:
 You can see it in action here, where it loads all my ~**700**LOC [config files](https://github.com/alexaandru/nvim-config),
 as well as my four plugins and one colorscheme.
 
+### LSP config auto-loading
+
+All `<rtp>/lsp/*.fnl` LSP config files are automatically loaded & registered with `vim.lsp.config`,
+same as neovim does for their \*.lua counterparts. Additionally, the LSPs that
+are registered are also automatically enabled, as a convenience.
+
 ### Ftplugin support
 
 Support for ftplugin is disabled by default as it is costly. You can enable it
@@ -52,14 +58,6 @@ The `:colorscheme` command is hardwired to look for `colors/<colorscheme>.{vim,l
 which obviously excludes .fnl files. There is also no event similar to `SourceCmd`
 to hook up to. That means one line of _lua_ code is required, to load the rest of the
 _fennel_ color scheme. See [froggy](https://github.com/alexaandru/froggy) for an example.
-
-### Benchmark
-
-It is only 1.1 times slower than [Hotpot](https://github.com/rktjmp/hotpot.nvim) (which is what I've been previously using).
-Benchmark was done by running `nvim --startuptime x +q` 10 times for each.
-I got a **196**ms avg. startup time with Hotpot and **224**ms with this shim.
-
-At the same time it is only ~**100**LOC, not counting blank lines, vs. +**6.3K**LOC for Hotpot.
 
 ## Similar Projects
 
